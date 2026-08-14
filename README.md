@@ -1,16 +1,42 @@
 # ASL Fingerspelling Recognition and Real-Time Translator
 
-A computer-vision and machine-learning project for recognizing American Sign Language (ASL) hand gestures from a webcam and converting detected static gestures into letters and text in real time.
+A computer vision and machine learning project for recognizing **American Sign Language (ASL) fingerspelling gestures** from a webcam and converting detected hand gestures into letters and text in real time.
 
-The project uses **MediaPipe Hands** to extract 21 hand landmarks (63 numerical features), followed by several **Support Vector Machine (SVM)** classifiers. The final real-time application can stabilize predictions, detect when the user releases a gesture, and build a written word/sentence on screen.
+The project uses **MediaPipe Hands** to extract 21 hand landmarks from a detected hand. Each landmark contains `x`, `y`, and `z` coordinates, producing **63 numerical features per sample**. These features are then processed and classified using multiple Support Vector Machine (SVM) models.
 
-> **Current scope:** This project primarily focuses on static ASL fingerspelling gestures. Dynamic signs such as gestures whose meaning depends on motion over time are a separate problem and require temporal modeling such as LSTM/GRU/Transformer-based approaches.
+The final application extends gesture recognition into a simple **real-time fingerspelling translator**, where a detected gesture is accepted as a letter when the user releases the hand, allowing letters to be accumulated into words and sentences.
+
+> **Current scope:** This project focuses primarily on static ASL fingerspelling gestures. Dynamic signs whose meaning depends on movement over time are not fully modeled by the current single-frame SVM pipeline and are a future extension using temporal models such as LSTM, GRU, or Transformers.
 
 ---
 
-## 1. Project Overview
+## Demo
 
-The complete pipeline is:
+The repository contains both model-evaluation results and the final real-time application.
+
+### Model Evaluation
+
+#### Evaluation Result 1
+
+![Model Evaluation 1](Demo_Results/Evaluating%20the%20model.png)
+
+#### Evaluation Result 2
+
+![Model Evaluation 2](Demo_Results/Evaluating%20the%20model%202.png)
+
+### Fingerspelling Application
+
+![Fingerspelling Application](Demo_Results/FingerSpelling%20Application.png)
+
+### Full Project Demonstration
+
+[Watch the complete ASL Fingerspelling Translator demonstration](Demo_Results/ASL-Fingerspelling-Translator.mp4)
+
+---
+
+# 1. Project Overview
+
+The project follows an end-to-end computer vision and machine learning pipeline:
 
 ```text
 ASL Image Dataset
@@ -22,17 +48,20 @@ Landmark Extraction
 MediaPipe Hands
         │
         ▼
-21 landmarks × 3 coordinates
+21 Hand Landmarks
         │
         ▼
-63 numerical features
+21 × 3 coordinates
+        │
+        ▼
+63 Numerical Features
         │
         ▼
 Preprocessing
         │
-        ├── Raw landmarks
+        ├── Raw Landmarks
         │
-        └── Wrist-centered landmarks
+        └── Wrist-Centered Landmarks
         │
         ▼
 StandardScaler
@@ -45,13 +74,16 @@ SVM Training
         └── RBF SVM
         │
         ▼
-Validation / Evaluation
+Validation and Evaluation
         │
         ▼
 Real-Time Webcam Prediction
         │
         ▼
-Stable Gesture
+Prediction Stabilization
+        │
+        ▼
+Gesture Acceptance
         │
         ▼
 Letter
@@ -67,29 +99,39 @@ Fingerspelling Text
 - MediaPipe-based hand landmark extraction
 - 21 hand landmarks per detected hand
 - 63 numerical features per sample
-- Raw landmark preprocessing
-- Wrist-centered normalization
+- Raw landmark representation
+- Wrist-centered landmark normalization
 - StandardScaler preprocessing
 - Linear SVM classification
 - RBF SVM classification
-- Validation accuracy and classification reports
+- Validation accuracy evaluation
+- Precision, recall, and F1-score evaluation
 - Confusion matrices
 - Real-time webcam inference
 - Real-time model switching
 - Prediction confidence display
 - Majority-vote prediction stabilization
-- Letter accumulation into words/sentences
-- `space` and `del` class support
-- Visual mirrored webcam display
-- Modular Jupyter Notebook workflow
+- Gesture-release based letter acceptance
+- Letter accumulation into words and sentences
+- `space` and `del` gesture support
+- Mirrored webcam visualization
+- Jupyter Notebook-based workflow
+- Saved trained models for reuse
 
 ---
 
 # 3. Dataset
 
-The original dataset consists of ASL gesture images.
+The project is based on the following Kaggle dataset:
 
-The dataset was processed into landmark-based numerical data before model training. Instead of training directly on the RGB images, MediaPipe Hands was used to convert each image into hand landmark coordinates.
+**ASL (American Sign Language) Alphabet Dataset**
+
+Dataset:
+https://www.kaggle.com/datasets/debashishsau/aslamerican-sign-language-aplhabet-dataset
+
+The original dataset contains ASL alphabet gesture images.
+
+Instead of training directly on RGB images, the project processes the images using MediaPipe Hands and converts each detected hand into a numerical landmark representation.
 
 Each detected hand contains:
 
@@ -98,16 +140,18 @@ Each detected hand contains:
 ×
 3 coordinates (x, y, z)
 =
-63 features
+63 numerical features
 ```
 
-The processed data therefore has the following general structure:
+The resulting landmark data follows the general structure:
 
 ```text
 label | x0 | y0 | z0 | x1 | y1 | z1 | ... | x20 | y20 | z20
 ```
 
-The classes used in this project are:
+## Dataset Classes
+
+The project uses the following class mapping:
 
 ```text
 A     -> 0
@@ -140,50 +184,60 @@ del   -> 26
 space -> 27
 ```
 
-### Dataset source
-
-If you redistribute the original image dataset, check the original dataset's license and usage conditions.
-
-If the original dataset cannot legally be redistributed with this repository, upload only the processed data that you are permitted to distribute and provide the original dataset source/instructions instead.
-
-**Dataset source:** `ADD_THE_ORIGINAL_DATASET_URL_HERE`
+> The original image dataset is not included in this repository. The repository contains processed landmark data derived from the dataset.
 
 ---
 
-# 4. Important Dataset Consideration
+# 4. Processed Dataset
 
-The dataset contains samples for both static and potentially motion-dependent signs, but an image-based landmark classifier only sees one frame at a time.
+The processed data is included in the repository under:
 
-This means that:
+```text
+DataSet/
+└── processed/
+    ├── landmarks.csv
+    ├── train.csv
+    ├── validation.csv
+    └── test.csv
+```
 
-- Static gestures can be classified directly.
-- Dynamic gestures cannot be fully represented by a single frame.
-- Gestures such as `J` and `Z` may involve movement depending on the dataset/signing convention.
-- A temporal model such as LSTM/GRU/Transformer is more appropriate when motion is essential.
+The processed data contains numerical landmark features extracted using MediaPipe.
 
-This repository therefore treats the current SVM pipeline as a **static fingerspelling recognizer**.
+This allows users to reproduce the training and evaluation stages without requiring the original image dataset to be stored in the repository.
+
+Because the processed CSV files are large, they are managed using **Git LFS**.
+
+If Git LFS is not already installed on your machine:
+
+```bash
+git lfs install
+```
+
+After cloning the repository, make sure the LFS files are downloaded:
+
+```bash
+git lfs pull
+```
 
 ---
 
 # 5. Repository Structure
 
-Recommended repository structure:
-
 ```text
-ASL-Fingerspelling-Recognition/
+ASL-Fingerpelling-Translator-Project/
 │
-├── README.md
-├── requirements.txt
-├── .gitignore
-│
-├── data/
-│   ├── raw/
-│   │   └── <original dataset>
-│   │
+├── DataSet/
 │   └── processed/
+│       ├── landmarks.csv
 │       ├── train.csv
 │       ├── validation.csv
 │       └── test.csv
+│
+├── Demo&Results/
+│   ├── ASL-Fingerspelling-Translator.mp4
+│   ├── Evaluating the model.png
+│   ├── Evaluating the model 2.png
+│   └── FingerSpelling Application.png
 │
 ├── models/
 │   ├── linear_svm_raw.pkl
@@ -193,154 +247,176 @@ ASL-Fingerspelling-Recognition/
 │
 ├── src/
 │   ├── config.py
-│   ├── extract_landmarks.ipynb
 │   ├── Preprocess.ipynb
+│   ├── extract_landmarks.ipynb
 │   ├── train_model.ipynb
-│   ├── evaluate_model.ipynb
+│   ├── evaluate_models.ipynb
 │   ├── realtime_prediction_test.ipynb
 │   └── fingerspelling_translator.ipynb
 │
-└── outputs/
-    ├── confusion_matrices/
-    └── figures/
+├── README.md
+├── requirements.txt
+└── .gitignore
 ```
-
-You may change the folder names, but the paths in `config.py` must match the actual repository structure.
 
 ---
 
-# 6. Environment
+# 6. Technologies Used
 
-The project was developed using:
+## Computer Vision
+
+- OpenCV
+- MediaPipe Hands
+
+## Machine Learning
+
+- Scikit-learn
+- Support Vector Machines
+- Linear SVM
+- RBF SVM
+
+## Data Processing
+
+- NumPy
+- Pandas
+- StandardScaler
+
+## Evaluation
+
+- Scikit-learn metrics
+- Matplotlib
+- Seaborn
+- Confusion matrices
+- Classification reports
+
+## Model Serialization
+
+- Joblib
+
+## Development
+
+- Python
+- Jupyter Notebook
+
+---
+
+# 7. Requirements
+
+The project was developed and tested using:
 
 ```text
-Python 3.11.x
+Python 3.11.5
 ```
 
-A virtual environment is strongly recommended.
+The main dependencies are:
 
-## Windows
-
-Create the environment:
-
-```bash
-python -m venv .venv
+```text
+numpy==1.26.4
+pandas
+scikit-learn
+opencv-python
+mediapipe
+matplotlib
+seaborn
+joblib
+jupyter
+ipykernel
 ```
 
-Activate it:
+All required packages are listed in:
 
-```bash
-.venv\Scripts\activate
-```
-
-## Linux / macOS
-
-```bash
-python3 -m venv .venv
-source .venv/bin/activate
+```text
+requirements.txt
 ```
 
 ---
 
-# 7. Install Dependencies
+# 8. Installation
 
-Install the required packages:
+Clone the repository:
 
 ```bash
-pip install numpy
-pip install pandas
-pip install opencv-python
-pip install mediapipe
-pip install scikit-learn
-pip install matplotlib
-pip install seaborn
-pip install joblib
-pip install jupyter
+git clone https://github.com/shehababdo/ASL-Fingerspelling-Translator.git
 ```
 
-Or install everything using:
+Move into the project directory:
+
+```bash
+cd ASL-Fingerspelling-Translator
+```
+
+Install the dependencies:
 
 ```bash
 pip install -r requirements.txt
 ```
 
-A compatible NumPy version may be necessary depending on the installed MediaPipe version. If MediaPipe produces compatibility errors with NumPy 2.x, use:
+If Git LFS is required:
 
 ```bash
-pip install "numpy<2"
+git lfs install
+git lfs pull
 ```
 
-The project was developed and tested around Python 3.11.
+Start Jupyter:
 
----
-
-# 8. Verify the Environment
-
-Run:
-
-```python
-import numpy
-import pandas
-import cv2
-import mediapipe
-import sklearn
-import matplotlib
-import seaborn
-import joblib
-
-print("NumPy:", numpy.__version__)
-print("Pandas:", pandas.__version__)
-print("OpenCV:", cv2.__version__)
-print("MediaPipe:", mediapipe.__version__)
-print("Scikit-learn:", sklearn.__version__)
-
-print("Environment is ready.")
+```bash
+jupyter notebook
 ```
 
-If all imports work without errors, continue with the pipeline.
+or:
 
----
+```bash
+jupyter lab
+```
 
-# 9. Step 1 — Configure Paths
-
-Open:
+Then open the notebooks inside:
 
 ```text
-src/config.py
-```
-
-Configure the dataset and output paths.
-
-The important paths are:
-
-```text
-Raw dataset
-Processed training data
-Processed validation data
-Processed test data
-Models
-```
-
-Keep paths relative to the project root where possible so another user can clone the repository and reproduce the project without changing hard-coded personal paths.
-
-Example:
-
-```python
-from pathlib import Path
-
-ROOT_DIR = Path(__file__).resolve().parent.parent
-
-DATA_DIR = ROOT_DIR / "data"
-RAW_DATA_DIR = DATA_DIR / "raw"
-PROCESSED_DATA_DIR = DATA_DIR / "processed"
-
-MODEL_DIR = ROOT_DIR / "models"
-OUTPUT_DIR = ROOT_DIR / "outputs"
+src/
 ```
 
 ---
 
-# 10. Step 2 — Extract Hand Landmarks
+# 9. Complete Workflow
+
+The recommended workflow is:
+
+```text
+1. Extract landmarks
+        ↓
+2. Preprocess the data
+        ↓
+3. Train the models
+        ↓
+4. Evaluate the models
+        ↓
+5. Test real-time recognition
+        ↓
+6. Run the fingerspelling translator
+```
+
+The corresponding notebooks are:
+
+```text
+src/extract_landmarks.ipynb
+        ↓
+src/Preprocess.ipynb
+        ↓
+src/train_model.ipynb
+        ↓
+src/evaluate_models.ipynb
+        ↓
+src/realtime_prediction_test.ipynb
+        ↓
+src/fingerspelling_translator.ipynb
+```
+
+If the processed dataset and saved models are already present, the extraction and training stages can be skipped.
+
+---
+
+# 10. Step 1 — Extract Hand Landmarks
 
 Open:
 
@@ -348,39 +424,31 @@ Open:
 src/extract_landmarks.ipynb
 ```
 
-This notebook processes the original images using MediaPipe Hands.
+This notebook processes the original ASL gesture images using MediaPipe Hands.
 
-For every image:
+For each image:
 
 ```text
 Image
   ↓
 MediaPipe Hands
   ↓
-Hand detected
+Hand Detection
   ↓
-21 landmarks
+21 Landmarks
   ↓
-x, y, z coordinates
+x, y, z Coordinates
   ↓
-63 features
+63 Features
 ```
 
-The resulting CSV contains:
+The extracted landmark dataset is saved into the processed-data directory.
 
-```text
-label + 63 landmark features
-```
-
-Run all cells in order.
-
-If an image does not contain a detectable hand, it may be skipped.
-
-After processing, verify the number of successful and skipped samples.
+Images for which a hand cannot be detected may be skipped.
 
 ---
 
-# 11. Step 3 — Preprocess the Landmark Data
+# 11. Step 2 — Preprocess the Landmark Data
 
 Open:
 
@@ -388,52 +456,25 @@ Open:
 src/Preprocess.ipynb
 ```
 
-This notebook prepares the landmark data for machine learning.
+The preprocessing stage separates labels and features and prepares different landmark representations for machine learning.
 
-The labels are separated from the features:
+## Raw Landmarks
 
-```python
-X = df.drop(columns=["label"])
-y = df["label"]
-```
-
-The feature matrix has:
+The original MediaPipe coordinates are used directly.
 
 ```text
-63 features
-```
-
----
-
-## 11.1 Raw Landmarks
-
-The raw landmark representation keeps the MediaPipe coordinates directly.
-
-Pipeline:
-
-```text
-Raw landmarks
+Raw Landmarks
       ↓
 StandardScaler
       ↓
 Linear SVM
 ```
 
----
+## Wrist-Centered Landmarks
 
-## 11.2 Wrist-Centered Landmarks
+The landmarks are normalized relative to the wrist landmark.
 
-For wrist-centered normalization, landmark 0 (the wrist) is used as the origin.
-
-For each sample:
-
-```text
-Every landmark
-      -
-Wrist coordinate
-```
-
-This makes the representation less dependent on where the hand appears in the image.
+The wrist is landmark `0`.
 
 The transformation is:
 
@@ -449,15 +490,19 @@ def wrist_center(X):
     return X.reshape(-1, 63)
 ```
 
-The resulting shape remains:
+This changes the representation from absolute hand position to landmark positions relative to the wrist.
+
+The feature shape remains:
 
 ```text
 (number_of_samples, 63)
 ```
 
+The wrist-centered representation produced a significant improvement in the current experiments.
+
 ---
 
-# 12. Step 4 — Train the Models
+# 12. Step 3 — Train the Models
 
 Open:
 
@@ -465,41 +510,41 @@ Open:
 src/train_model.ipynb
 ```
 
-The project currently contains three important SVM approaches.
+Three main SVM configurations were evaluated.
 
 ## Model 1 — Raw Linear SVM
 
 ```text
-Raw landmarks
-     ↓
+Raw Landmarks
+      ↓
 StandardScaler
-     ↓
+      ↓
 Linear SVM
 ```
 
 ## Model 2 — Wrist-Centered Linear SVM
 
 ```text
-Raw landmarks
-     ↓
-Wrist-centered normalization
-     ↓
+Raw Landmarks
+      ↓
+Wrist-Centered Normalization
+      ↓
 StandardScaler
-     ↓
+      ↓
 Linear SVM
 ```
 
 ## Model 3 — RBF SVM
 
 ```text
-Wrist-centered landmarks
-     ↓
+Processed Landmarks
+      ↓
 StandardScaler
-     ↓
+      ↓
 RBF SVM
 ```
 
-Example:
+A typical Linear SVM configuration used:
 
 ```python
 from sklearn.svm import SVC
@@ -511,60 +556,65 @@ linear_svm = SVC(
 )
 ```
 
-`probability=True` is enabled because the real-time application displays an estimated prediction confidence using `predict_proba()`.
-
----
-
-# 13. SVM Parameters
-
-### `kernel`
-
-For the linear model:
-
-```python
-kernel="linear"
-```
-
-This creates a linear decision boundary.
-
-For the RBF model:
+The RBF model uses:
 
 ```python
 kernel="rbf"
 ```
 
-This allows nonlinear decision boundaries.
+The `probability=True` option enables probability estimates through `predict_proba()` for the real-time application.
 
-### `C`
+---
+
+# 13. SVM Parameters
+
+## Kernel
+
+### Linear
+
+```python
+kernel="linear"
+```
+
+Creates a linear decision boundary.
+
+### RBF
+
+```python
+kernel="rbf"
+```
+
+Allows nonlinear decision boundaries.
+
+## C
 
 ```python
 C=1
 ```
 
-Controls the trade-off between:
+Controls the trade-off between the complexity of the decision boundary and classification errors.
 
-- allowing classification errors
-- keeping the decision boundary regularized
-
-### `probability`
+## Probability
 
 ```python
 probability=True
 ```
 
-Enables probability estimates through:
+Enables:
 
 ```python
 model.predict_proba(X)
 ```
 
-This is useful for displaying confidence in the real-time application.
+which is used by the real-time application to display an estimated prediction confidence.
 
 ---
 
-# 14. Step 5 — Save the Models
+# 14. Saved Models and Scalers
 
-After training, save the trained models and scalers:
+The trained models and scalers are serialized using Joblib.
+
+Example:
 
 ```python
 import joblib
@@ -590,29 +640,68 @@ joblib.dump(
 )
 ```
 
-The scaler is part of the trained pipeline and must be saved.
-
-You cannot train using one scaler and then use a different scaler during real-time inference.
+A scaler is part of the preprocessing pipeline and must match the preprocessing used during training.
 
 ---
 
-# 15. Step 6 — Evaluate the Models
+# 15. Important: Scaler vs Model
 
-Open:
-
-```text
-src/evaluate_model.ipynb
-```
-
-The validation dataset is used to compare models during development.
+A scaler is **not** a classifier.
 
 For example:
 
 ```python
-y_val_pred = model.predict(X_val_scaled)
+raw_scaler
 ```
 
-Then calculate accuracy:
+is a preprocessing object.
+
+While:
+
+```python
+linear_svm
+```
+
+is the trained classifier.
+
+The inference pipeline must therefore be:
+
+```text
+Landmarks
+    ↓
+Correct preprocessing
+    ↓
+Correct scaler
+    ↓
+Correct SVM
+    ↓
+Prediction
+```
+
+The preprocessing used for inference must be the same preprocessing used when training the model.
+
+---
+
+# 16. Step 4 — Evaluate the Models
+
+Open:
+
+```text
+src/evaluate_models.ipynb
+```
+
+The validation dataset is used to compare the models during development.
+
+The evaluation includes:
+
+- Accuracy
+- Precision
+- Recall
+- F1-score
+- Classification reports
+- Confusion matrices
+
+Example:
 
 ```python
 from sklearn.metrics import accuracy_score
@@ -627,79 +716,35 @@ print(
 )
 ```
 
-The evaluation notebook should also generate:
+Accuracy measures the percentage of validation samples that were classified correctly.
 
-- Classification reports
-- Precision
-- Recall
-- F1-score
-- Confusion matrices
+However, overall accuracy alone does not explain which individual classes are difficult.
+
+For this reason, the classification report and confusion matrix are also used.
 
 ---
 
-# 16. Why Accuracy Is Not Enough
+# 17. Validation Results
 
-Accuracy tells you the overall percentage of correctly classified samples.
+The current experiments produced:
 
-For example:
+| Model | Validation Accuracy |
+|---|---:|
+| Raw Linear SVM | **72.29%** |
+| Wrist-Centered Linear SVM | **98.48%** |
+| RBF SVM | **98.45%** |
 
-```text
-98.48%
-```
+The wrist-centered Linear SVM achieved the best overall validation accuracy.
 
-means approximately 98.48 out of every 100 validation samples were classified correctly.
+The RBF SVM achieved an almost identical overall result but showed different behavior for individual classes.
 
-However, for an ASL classifier, per-class performance is also important.
+The raw-landmark Linear SVM performed substantially worse.
 
-A model can have high overall accuracy while struggling with particular letters.
-
-Therefore, inspect:
-
-```text
-Precision
-Recall
-F1-score
-Confusion Matrix
-```
-
-especially for confusing classes such as:
-
-```text
-N
-S
-T
-X
-Z
-```
+The results demonstrate that **feature representation and normalization can have a major impact on classification performance**.
 
 ---
 
-# 17. Current Validation Results
-
-The current experiments produced approximately:
-
-```text
-Wrist-Centered Linear SVM
-Validation Accuracy: 98.48%
-
-RBF SVM
-Validation Accuracy: 98.45%
-
-Raw Linear SVM
-Validation Accuracy: 72.29%
-```
-
-The wrist-centered representation therefore performed substantially better than the raw landmark representation.
-
-The wrist-centered Linear SVM was particularly strong for the current static gesture task.
-
-The RBF model achieved a very similar overall accuracy but showed different class-level behavior.
-
-These numbers are **validation results**, not a guarantee of real-world webcam performance.
-
----
-
-# 18. Step 7 — Test the Models in Real Time
+# 18. Real-Time Model Testing
 
 Open:
 
@@ -707,16 +752,18 @@ Open:
 src/realtime_prediction_test.ipynb
 ```
 
-This notebook loads the webcam and performs:
+The real-time pipeline is:
 
 ```text
 Webcam
    ↓
-MediaPipe
+OpenCV
    ↓
-21 landmarks
+MediaPipe Hands
    ↓
-63 features
+21 Landmarks
+   ↓
+63 Features
    ↓
 Scaler
    ↓
@@ -725,120 +772,46 @@ SVM
 Prediction
 ```
 
-The frame used for ML processing should remain unflipped.
+The image used for machine-learning inference remains in its original orientation.
 
-The frame can then be horizontally flipped only for visualization:
+The frame is flipped only for visualization:
 
 ```python
 display_frame = cv2.flip(frame, 1)
 ```
 
-This gives the user a natural mirror-like webcam view without changing the landmark data used by the classifier.
+This creates a natural mirror-like webcam experience while keeping the ML input consistent.
 
 ---
 
-# 19. Switching Models in Real Time
+# 19. Real-Time Model Switching
 
-The real-time notebook supports switching between models.
+The real-time testing notebook supports model switching while the webcam is running.
+
+Controls:
 
 ```text
-1 → Wrist-Centered Linear SVM
+1 → Linear SVM
 2 → RBF SVM
-3 → Raw Linear SVM
+3 → Wrist-Centered Linear SVM
 Q → Quit
 ```
 
-This makes it easy to compare the models using the same webcam input.
+This makes it possible to compare different models using the same webcam input.
 
-The prediction history is cleared when switching models to prevent predictions from the previous model affecting the new model.
-
----
-
-# 20. Step 8 — Run the Fingerspelling Translator
-
-Open:
-
-```text
-src/fingerspelling_translator.ipynb
-```
-
-This builds on the real-time recognizer.
-
-Instead of only displaying:
-
-```text
-Prediction: A
-```
-
-the system builds:
-
-```text
-Text: ABC
-```
+Prediction history is cleared whenever the model is switched.
 
 ---
 
-## Gesture-to-letter interaction
-
-The current interaction design is intentionally simple:
-
-```text
-Show gesture
-      ↓
-Hold gesture
-      ↓
-Prediction stabilizes
-      ↓
-Remove hand
-      ↓
-Letter is added
-```
-
-For example:
-
-```text
-Show H
-Remove hand
-→ H
-
-Show E
-Remove hand
-→ HE
-
-Show L
-Remove hand
-→ HEL
-
-Show L
-Remove hand
-→ HELL
-
-Show O
-Remove hand
-→ HELLO
-```
-
-This also allows repeated letters:
-
-```text
-L → release → L → release
-```
-
-to produce:
-
-```text
-LL
-```
-
----
-
-# 21. Prediction Stabilization
+# 20. Prediction Stabilization
 
 Individual webcam frames can occasionally be misclassified.
 
-To reduce this effect, predictions are stored in a short history:
+To reduce frame-to-frame instability, predictions are stored in a short history:
 
 ```python
+from collections import deque, Counter
+
 prediction_history = deque(maxlen=10)
 ```
 
@@ -850,7 +823,7 @@ stable_label = Counter(
 ).most_common(1)[0][0]
 ```
 
-Instead of trusting a single frame:
+For example:
 
 ```text
 Frame 1 → A
@@ -860,175 +833,260 @@ Frame 4 → A
 Frame 5 → A
 ```
 
-the system can determine:
+can result in:
 
 ```text
 Stable prediction → A
 ```
 
-This is useful for real-time inference.
+This makes the real-time output more stable.
 
 ---
 
-# 22. Special Classes
+# 21. Fingerspelling Translator
 
-The classifier contains two non-letter classes:
+Open:
+
+```text
+src/fingerspelling_translator.ipynb
+```
+
+The fingerspelling translator builds on the real-time recognition system.
+
+Instead of only showing the current predicted letter, the application maintains a text buffer.
+
+The process is:
+
+```text
+Hand Gesture
+      ↓
+SVM Prediction
+      ↓
+Prediction Stabilization
+      ↓
+Stable Gesture
+      ↓
+Hand Release / Gesture Completion
+      ↓
+Accept Letter
+      ↓
+Add Letter to Text
+```
+
+For example:
+
+```text
+Show H
+Release hand
+→ H
+
+Show E
+Release hand
+→ HE
+
+Show L
+Release hand
+→ HEL
+
+Show L
+Release hand
+→ HELL
+
+Show O
+Release hand
+→ HELLO
+```
+
+Repeated letters are also supported:
+
+```text
+L → release → L → release
+```
+
+results in:
+
+```text
+LL
+```
+
+---
+
+# 22. Special Gestures
+
+The classifier also contains:
 
 ```text
 space
 del
 ```
 
-### `space`
+## Space
 
-When the user performs the `space` gesture and releases the hand:
+Performing the `space` gesture and releasing the hand inserts a space:
 
 ```text
 HELLO
 +
 space
+=
+HELLO WORLD
 ```
 
-becomes:
+## Delete
 
-```text
-HELLO 
-```
+Performing the `del` gesture and releasing the hand removes the last character.
 
-### `del`
-
-When the user performs `del` and releases the hand:
+For example:
 
 ```text
 HELLO
 +
 del
-```
-
-becomes:
-
-```text
+=
 HELL
 ```
 
 ---
 
-# 23. Recommended Execution Order
+# 23. Real-Time Visualization
 
-For a completely fresh setup, run the notebooks in this order:
+The real-time application displays:
+
+- Current prediction
+- Estimated confidence
+- Current model
+- Accumulated text
+- Keyboard controls
+- Hand landmarks
+
+The display is mirrored for easier interaction while inference is performed on the original frame orientation.
+
+---
+
+# 24. Current Observations
+
+Validation results and real-time behavior do not always match exactly.
+
+The current experiments showed that the wrist-centered Linear SVM performs very well for several static signs, while some letters remain challenging during webcam inference.
+
+Real-time testing also showed that visually similar gestures can still produce confusion even when overall validation accuracy is very high.
+
+This is why both:
+
+1. Offline evaluation
+2. Real-world webcam testing
+
+are necessary when developing a real-time computer-vision system.
+
+---
+
+# 25. Limitations
+
+## Static Gesture Assumption
+
+The SVM models process one frame at a time.
+
+Therefore, they do not explicitly learn how hand landmarks move over time.
+
+## Dynamic Gestures
+
+Some signs can depend on movement and temporal information.
+
+A single-frame classifier cannot fully represent that temporal structure.
+
+A natural future direction is:
 
 ```text
-1. config.py
-       ↓
-2. extract_landmarks.ipynb
-       ↓
-3. Preprocess.ipynb
-       ↓
-4. train_model.ipynb
-       ↓
-5. evaluate_model.ipynb
-       ↓
-6. realtime_prediction_test.ipynb
-       ↓
-7. fingerspelling_translator.ipynb
+Sequence of Landmarks
+        ↓
+LSTM / GRU / Transformer
+        ↓
+Dynamic Gesture Recognition
 ```
 
-Do not skip directly to the real-time notebook unless the required processed data, models, and scalers already exist.
+## Real-World Conditions
+
+Performance can vary depending on:
+
+- Lighting
+- Camera quality
+- Background
+- Hand orientation
+- Distance from camera
+- Partial occlusion
+- Individual signing style
+
+## Dataset Bias
+
+High validation accuracy on a dataset does not necessarily mean identical accuracy for every user in a real-world environment.
 
 ---
 
-# 24. Reproducing the Project
+# 26. Future Improvements
 
-A new user should be able to reproduce the project using:
+Possible future improvements include:
 
-```bash
-git clone <YOUR_REPOSITORY_URL>
-cd ASL-Fingerspelling-Recognition
-```
+- LSTM-based dynamic gesture recognition
+- GRU-based temporal modeling
+- Transformer-based gesture recognition
+- Two-hand ASL recognition
+- Improved gesture segmentation
+- More robust gesture acceptance logic
+- Better handling of repeated gestures
+- Word-level recognition
+- Sentence-level recognition
+- Language-model-based sentence correction
+- Text-to-speech output
+- Mobile deployment
+- Edge deployment
+- Larger and more diverse datasets
+- Improved handling of difficult gestures such as J and Z
+- Evaluation with multiple users
+- Better real-world robustness
 
-Create an environment:
+---
 
-```bash
-python -m venv .venv
-```
+# 27. Why Use Hand Landmarks?
 
-Activate it:
+Instead of training directly on RGB images, the project converts each hand into a compact numerical representation.
 
-### Windows
-
-```bash
-.venv\Scripts\activate
-```
-
-### Linux/macOS
-
-```bash
-source .venv/bin/activate
-```
-
-Install dependencies:
-
-```bash
-pip install -r requirements.txt
-```
-
-Then:
+Rather than processing an entire image, the classifier receives:
 
 ```text
-1. Download/prepare the dataset
-2. Configure paths
-3. Run extract_landmarks.ipynb
-4. Run Preprocess.ipynb
-5. Run train_model.ipynb
-6. Run evaluate_model.ipynb
-7. Run realtime_prediction_test.ipynb
-8. Run fingerspelling_translator.ipynb
+21 landmarks × 3 coordinates
+=
+63 numerical features
 ```
+
+This provides a compact representation that is suitable for:
+
+- Classical machine learning
+- Fast inference
+- Real-time applications
+- Easier debugging
+- Feature normalization
+- Visualization
+- Model comparison
 
 ---
 
-# 25. Webcam Requirements
+# 28. Common Problems
 
-The real-time notebooks require:
+## MediaPipe / NumPy Compatibility
 
-- A working webcam
-- OpenCV camera access
-- MediaPipe Hands
-- A trained model
-- The corresponding scaler
-- The correct class mapping
+The project was developed with NumPy 1.26.4.
 
-If OpenCV cannot access the camera, check:
-
-```python
-cap = cv2.VideoCapture(0)
-```
-
-If necessary, try:
-
-```python
-cap = cv2.VideoCapture(1)
-```
-
-depending on the number assigned to the camera by the operating system.
-
----
-
-# 26. Common Problems
-
-## MediaPipe import problems
-
-If MediaPipe fails because of NumPy compatibility, try:
+If MediaPipe has compatibility problems with a newer NumPy version, install:
 
 ```bash
-pip install "numpy<2"
+pip install numpy==1.26.4
 ```
 
 Then restart the Jupyter kernel.
 
 ---
 
-## OpenCV camera error
+## OpenCV Camera Error
 
 If:
 
@@ -1036,23 +1094,41 @@ If:
 success, frame = cap.read()
 ```
 
-returns `False`, check camera permissions and whether another application is already using the webcam.
+returns `False`, check:
+
+- Camera permissions
+- Whether another program is using the webcam
+- The camera index
+
+For example:
+
+```python
+cap = cv2.VideoCapture(0)
+```
+
+If necessary:
+
+```python
+cap = cv2.VideoCapture(1)
+```
 
 ---
 
-## `cvtColor` error
+## `cvtColor` Error
 
-An error such as:
+If OpenCV reports:
 
 ```text
 (-215:Assertion failed) !_src.empty()
 ```
 
-usually means OpenCV received an empty frame.
+it usually means OpenCV received an empty frame.
 
-Check:
+Always check:
 
 ```python
+success, frame = cap.read()
+
 if not success:
     break
 ```
@@ -1065,271 +1141,232 @@ cv2.cvtColor(...)
 
 ---
 
-## Wrong predictions after changing preprocessing
+## Wrong Predictions After Changing Preprocessing
 
-The scaler used during inference must correspond to the preprocessing used during training.
+The scaler and preprocessing used during inference must correspond to the model used during training.
 
-For example:
+Do not mix different preprocessing pipelines.
+
+Correct:
 
 ```text
-Wrist-centered training
+Training
+    ↓
+Wrist-Centered
+    ↓
+Scaler
+    ↓
+SVM
+
+Inference
+    ↓
+Wrist-Centered
+    ↓
+Same Scaler
+    ↓
+Same SVM
+```
+
+---
+
+# 29. Reproducing the Project
+
+For a complete reproduction:
+
+```text
+1. Clone the repository
         ↓
-wrist-centered inference
+2. Install dependencies
         ↓
-same scaler
+3. Install/configure Git LFS
         ↓
-same model
-```
-
-Do not mix:
-
-```text
-Raw data + wrist scaler
-```
-
-or:
-
-```text
-Wrist-centered data + raw scaler
-```
-
----
-
-# 27. Important Model Rule
-
-A scaler is **not a model**.
-
-For example:
-
-```python
-raw_scaler
-```
-
-is a preprocessing object.
-
-While:
-
-```python
-linear_svm_model
-```
-
-is the classifier.
-
-The real-time pipeline is:
-
-```text
-Landmarks
-   ↓
-raw_scaler
-   ↓
-linear_svm_model
-   ↓
-Prediction
-```
-
-For a different trained pipeline:
-
-```text
-Wrist-centered landmarks
-   ↓
-wrist_scaler
-   ↓
-wrist-centered SVM
-   ↓
-Prediction
-```
-
-The preprocessing must match the model that was trained with it.
-
----
-
-# 28. Limitations
-
-The current system has several limitations.
-
-### Static gesture assumption
-
-The SVM receives one frame at a time.
-
-It therefore does not explicitly model motion.
-
-### Real-world lighting
-
-Performance may change with:
-
-- lighting
-- camera quality
-- background
-- hand orientation
-- distance from camera
-- partial occlusion
-
-### Dataset bias
-
-High validation accuracy on a dataset does not necessarily mean equivalent performance with a webcam.
-
-### Dynamic signs
-
-A temporal model is more suitable for gestures whose meaning depends on movement.
-
-Potential future approaches include:
-
-```text
-Landmark sequences
-      ↓
-LSTM / GRU
-      ↓
-Dynamic gesture classification
-```
-
-or:
-
-```text
-Landmark sequences
-      ↓
-Transformer
-      ↓
-Temporal gesture recognition
-```
-
----
-
-# 29. Future Improvements
-
-Possible future development:
-
-- Better temporal gesture handling
-- LSTM/GRU sequence model
-- Transformer-based temporal model
-- Two-hand ASL recognition
-- Improved gesture segmentation
-- Automatic letter acceptance
-- Gesture cooldown/debounce
-- Word-level recognition
-- Language-model-based sentence correction
-- Text-to-speech
-- Mobile deployment
-- Edge deployment
-- Larger and more diverse datasets
-- Better handling of `J` and `Z`
-- Real-world evaluation with different users
-
----
-
-# 30. Project Results
-
-The current SVM experiments demonstrate that landmark-based classification can achieve strong validation performance for static ASL fingerspelling.
-
-The most successful representation in the current experiments was:
-
-```text
-MediaPipe landmarks
+4. Download the original ASL image dataset from Kaggle if required
         ↓
-Wrist-centered normalization
+5. Configure paths
         ↓
-StandardScaler
+6. Extract landmarks
         ↓
-Linear SVM
+7. Preprocess the data
+        ↓
+8. Train the models
+        ↓
+9. Evaluate the models
+        ↓
+10. Run real-time prediction
+        ↓
+11. Run the fingerspelling translator
 ```
 
-with approximately:
-
-```text
-98.48% validation accuracy
-```
-
-The RBF SVM produced a very similar result:
-
-```text
-98.45% validation accuracy
-```
-
-The raw landmark Linear SVM performed considerably worse:
-
-```text
-72.29% validation accuracy
-```
-
-This highlights the importance of choosing an appropriate landmark representation before increasing model complexity.
+If the processed dataset and trained models included in the repository are used, the extraction and training stages can be skipped.
 
 ---
 
-# 31. License
+# 30. Quick Start
 
-Add the license appropriate for your project here.
-
-For example:
-
-```text
-MIT License
-```
-
-However, make sure the license of the repository is compatible with the license of any dataset, pretrained model, or third-party component you redistribute.
-
----
-
-# 32. Acknowledgements
-
-This project uses:
-
-- MediaPipe Hands for hand landmark detection
-- OpenCV for computer vision and webcam processing
-- Scikit-learn for machine-learning models
-- NumPy for numerical processing
-- Pandas for data processing
-- Matplotlib / Seaborn for evaluation visualization
-- Joblib for model serialization
-
----
-
-# 33. Author
-
-**Shehab Abdo**
-
-Mechatronics & Robotics Engineer
-
-GitHub: `ADD_YOUR_GITHUB_PROFILE`
-
-Portfolio: `ADD_YOUR_PORTFOLIO_URL`
-
----
-
-# 34. Quick Start
-
-For experienced users:
+Clone the repository:
 
 ```bash
-git clone <YOUR_REPOSITORY_URL>
-cd ASL-Fingerspelling-Recognition
+git clone https://github.com/shehababdo/ASL-Fingerspelling-Translator.git
+```
 
-python -m venv .venv
+Enter the project directory:
 
-# Windows
-.venv\Scripts\activate
+```bash
+cd ASL-Fingerspelling-Translator
+```
 
+Install dependencies:
+
+```bash
 pip install -r requirements.txt
 ```
 
-Then open Jupyter:
+If Git LFS is required:
+
+```bash
+git lfs install
+git lfs pull
+```
+
+Start Jupyter:
 
 ```bash
 jupyter notebook
 ```
 
-Run:
+Then open:
 
 ```text
-src/extract_landmarks.ipynb
-        ↓
-src/Preprocess.ipynb
-        ↓
-src/train_model.ipynb
-        ↓
-src/evaluate_model.ipynb
-        ↓
 src/realtime_prediction_test.ipynb
-        ↓
+```
+
+for real-time model testing, or:
+
+```text
 src/fingerspelling_translator.ipynb
 ```
 
-Enjoy building with ASL landmark-based recognition!
+for the complete fingerspelling application.
+
+---
+
+# 31. Project Results
+
+The current experiments demonstrate that landmark representation has a significant effect on machine-learning performance.
+
+The strongest current pipeline was:
+
+```text
+MediaPipe Hands
+       ↓
+Wrist-Centered Normalization
+       ↓
+StandardScaler
+       ↓
+Linear SVM
+```
+
+with:
+
+```text
+98.48% validation accuracy
+```
+
+The RBF SVM achieved:
+
+```text
+98.45% validation accuracy
+```
+
+while the raw-landmark Linear SVM achieved:
+
+```text
+72.29% validation accuracy
+```
+
+This demonstrates that selecting a suitable feature representation can be more important than simply increasing classifier complexity.
+
+---
+
+# 32. Dataset Reference
+
+The original dataset used in this project:
+
+**ASL (American Sign Language) Alphabet Dataset — Kaggle**
+
+https://www.kaggle.com/datasets/debashishsau/aslamerican-sign-language-aplhabet-dataset
+
+Please review the dataset's original license and usage terms before redistributing or using derived data outside this repository.
+
+---
+
+# 33. Author
+
+## Shehab Abdo
+
+Mechatronics & Robotics Engineer
+
+**Portfolio:**  
+https://shehababdo.github.io/
+
+**LinkedIn:**  
+https://www.linkedin.com/in/shehab-abdo-a94946198/
+
+---
+
+# 34. Acknowledgements
+
+This project uses:
+
+- **MediaPipe Hands** for hand landmark detection
+- **OpenCV** for computer vision and webcam processing
+- **Scikit-learn** for machine-learning models
+- **NumPy** for numerical processing
+- **Pandas** for data processing
+- **Matplotlib** for visualization
+- **Seaborn** for evaluation visualization
+- **Joblib** for model serialization
+
+---
+
+# 35. License
+
+This repository can be distributed under an open-source license such as the MIT License, provided that the repository's license is compatible with the licenses and terms of the dataset and third-party components used by the project.
+
+Check the original dataset license before redistributing the dataset or derived materials beyond what its terms permit.
+
+---
+
+# 36. Final Project Summary
+
+This project represents an end-to-end implementation of a real-time ASL fingerspelling recognition pipeline:
+
+```text
+ASL Dataset
+     ↓
+MediaPipe Hand Landmarks
+     ↓
+Feature Engineering
+     ↓
+Wrist-Centered Normalization
+     ↓
+StandardScaler
+     ↓
+SVM Classification
+     ↓
+Model Evaluation
+     ↓
+Real-Time Webcam Inference
+     ↓
+Prediction Stabilization
+     ↓
+Gesture Acceptance
+     ↓
+Fingerspelling
+     ↓
+Text
+```
+
+The project demonstrates how a lightweight landmark-based representation combined with classical machine learning can be used to build a practical real-time computer vision system.
+
+The next major direction is extending the system from static fingerspelling recognition toward temporal modeling for dynamic signs and continuous sign-language understanding.
